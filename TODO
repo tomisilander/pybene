@@ -1,8 +1,7 @@
-setup github
+- do not optimize
 
-Do not optimize
-What if not all local scores are available
-What if not all subsets are consulted
- - find good small subsets and their good supersets
-fastAPI demo
-best tree 
+- implement Bayesian scores and NML scores
+- implement constraints
+- implement model-averaging
+ 
+- fastAPI server for subnet optimization
