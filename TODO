@@ -1,0 +1,8 @@
+setup github
+
+Do not optimize
+What if not all local scores are available
+What if not all subsets are consulted
+ - find good small subsets and their good supersets
+fastAPI demo
+best tree 
