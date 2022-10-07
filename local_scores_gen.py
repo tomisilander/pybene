@@ -42,25 +42,24 @@ def gen_contabs(start_contab):
         yield contabs[var_count-1]
 
 def contab2condtab(contab, i, valcount):
-    if contab.sparse_dim() == 1:
-        pcfg2ix = {():0}
-        pcfg_count = 1
-    else:
-        pcfgs = marginalize(contab, [i]).indices().numpy().transpose()
-        pcfg_count = pcfgs.shape[0]
-        pcfg2ix = dict(zip(map(tuple,pcfgs), range(pcfg_count)))
 
-    cfgs = contab.indices().numpy().transpose()
-    condtab = np.zeros((pcfg_count, valcount))
-    for cfg, freq in zip(map(tuple,cfgs), contab.values().numpy()):
-        pcfg = cfg[:i] + cfg[i+1:]
-        pcfg_ix = pcfg2ix[pcfg]
-        condtab[pcfg_ix][cfg[i]] = freq
-    return condtab
+    cfgs  = contab.indices().numpy().transpose()
+    i_vals = cfgs[:,i]
+    freqs = contab.values().numpy()
+    pcfgs = cfgs.copy()
+    pcfgs[:,i] = -1
+    condtab = np.zeros((pcfgs.shape[0], valcount)) # too big but
+    pcfg2ix = {}
+    # slow loop but
+    for pcfg, i_val, freq in zip(map(tuple,pcfgs), i_vals, freqs):
+        pcfg_ix = pcfg2ix.setdefault(pcfg, len(pcfg2ix))        
+        condtab[pcfg_ix][i_val] = freq
+
+    return condtab[:len(pcfg2ix),:]
 
 def gen_condtabs(contabs, valcounts):
     for s, contab in contabs:
-        for i,x in enumerate(s):
+        for i, x, in enumerate(s):
             condtab = contab2condtab(contab, i, valcounts[x])
             ps = s[:i]+s[i+1:]
             yield x, ps, condtab
