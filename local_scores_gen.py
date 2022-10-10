@@ -42,19 +42,23 @@ def gen_contabs(start_contab):
         yield contabs[var_count-1]
 
 def contab2condtab(contab, i, valcount):
-
     cfgs  = contab.indices().numpy().transpose()
     i_vals = cfgs[:,i]
     freqs = contab.values().numpy()
     pcfgs = cfgs.copy()
     pcfgs[:,i] = -1
-    condtab = np.zeros((pcfgs.shape[0], valcount)) # too big but
+
+    bcfgs = pcfgs.tobytes()
+    bcfg_len = cfgs.shape[1] * 8    
+    starts = range(0, 8*cfgs.size, bcfg_len)
+    ends   = range(bcfg_len,8*cfgs.size+1,bcfg_len)
+    
+    condtab = np.zeros((cfgs.shape[0], valcount), dtype=np.int64) # too big but
     pcfg2ix = {}
     # slow loop but
-    for pcfg, i_val, freq in zip(map(tuple,pcfgs), i_vals, freqs):
-        pcfg_ix = pcfg2ix.setdefault(pcfg, len(pcfg2ix))        
+    for (start,end,i_val,freq) in zip(starts,ends,i_vals,freqs):
+        pcfg_ix = pcfg2ix.setdefault(bcfgs[start:end], len(pcfg2ix))        
         condtab[pcfg_ix][i_val] = freq
-
     return condtab[:len(pcfg2ix),:]
 
 def gen_condtabs(contabs, valcounts):
