@@ -9,6 +9,7 @@ from torch.sparse import sum as marginalize
 from scorer import Scorer
 from benetypes import *
 
+
 def read_data(filename:str, valcounts:np.ndarray) -> torch.tensor:
     """reads data to a (sparse) torch tensor"""
     i = np.loadtxt(filename, dtype=int).transpose()
@@ -27,7 +28,7 @@ def gen_sets_down(bitset, first_out_ix):
         yield from gen_sets_down(next_set, x)
 
 def gen_contabs(start_contab):
-    """sequantially marginalize contabs as dictated by gen_sets_down"""
+    """sequentially marginalize contabs as dictated by gen_sets_down"""
     n = start_contab.sparse_dim()
     contabs = [None]*(n+1)
     contabs[n] = (tuple(range(n)), start_contab)
