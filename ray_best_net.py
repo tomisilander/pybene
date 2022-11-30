@@ -69,4 +69,5 @@ if __name__ == '__main__':
 
     S = frozenset(args.vars if args.vars else range(nof_vars))
     futures = bene.get_best_in_S.remote(S, args.score, args.N)
+    print('waiting for results ...')
     print(ray.get(futures))
