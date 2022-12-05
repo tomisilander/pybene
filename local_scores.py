@@ -10,7 +10,7 @@ from benetypes import *
 from local_scores_gen import read_data, data2local_scores
 from local_scores_io import  read_local_scores, write_local_scores
 
-def args2local_scores(args):
+def args2local_scores(args) -> LocalScores:
     valcounts = fn2valcs(args.vd_file)
     if args.dir:
         return read_local_scores(args.dir, len(valcounts))
@@ -20,6 +20,12 @@ def args2local_scores(args):
         N = data.values().sum().item()
         scorer = Scorer(valcounts, N, args.score)
         return data2local_scores(valcounts, data, scorer)
+
+def negate(scores:LocalScores):
+    """in place"""
+    for ls in scores.values():
+        for parset in ls:
+            ls[parset] *= -1
 
 def add_score_args(parser):
     parser.add_argument('-s', '--score', default='BIC')

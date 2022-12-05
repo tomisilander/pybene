@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-from locale import locale_encoding_alias
 from typing import Iterator, Sequence
 from argparse import ArgumentParser
+import pathlib
+import pickle
+
 from benetypes import *
 from beneDP import BeneDP
 from vd import fn2valcs
-from local_scores import add_score_args, args2local_scores
+from local_scores import add_score_args, args2local_scores, negate
 
 def best_net_in_S(S : Varset, bDP : BeneDP) -> Net:
 
@@ -47,8 +49,15 @@ def add_args(parser:ArgumentParser):
     g.add_argument('--data')
     g.add_argument('--dir')
     add_score_args(parser)
+    parser.add_argument('--worst', action='store_true')
     parser.add_argument('--vars', nargs='+', type=int)
+    parser.add_argument('-o', '--outfile')
 
+def save(net:Net, outfile):
+    outpath = pathlib.Path(outfile)
+    outdir = outpath.parent
+    outdir.mkdir(parents=True, exist_ok=True)
+    pickle.dump(net,outpath.open('w'))
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -56,7 +65,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     local_scores = args2local_scores(args)
+    if args.worst:
+        negate(local_scores)
     bDP = BeneDP(local_scores)    
     S = frozenset(args.vars) if args.vars else bDP.all_vars
     best_net = best_net_in_S(S, bDP)
     print(best_net, bDP.best_net_score_in[S])
+    if args.outfile:
+        save(best_net, args.outfile)
