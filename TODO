@@ -5,3 +5,14 @@
 - implement model-averaging
  
 - create image
+
+# to cut a part X of the network to be optimized, one strategy is to 
+# to fix the inside parents of the nodes in X and not allow any new parents to them
+# for this one needs to implement constraints
+
+- plan cutting and how to use it
+  - Take a big network
+  - cut a piece (remember the mapping between cut and orig variables)
+  	- by selecting a node and its boundary and its boundary etc.
+  - optimize a piece
+  - glue the piece back
