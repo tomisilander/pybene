@@ -9,12 +9,12 @@ from scorer import Scorer
 from benetypes import *
 from local_scores_gen import read_data, data2local_scores
 from local_scores_io import  read_local_scores, write_local_scores
-from constraints import file2constraints
+from constraints import file2musts_n_bans
 
 def args2local_scores(args) -> LocalScores:
     valcounts = fn2valcs(args.vd_file)
 
-    bans, musts = file2constraints(args.constraints) if args.constraints else ({},{})
+    musts, bans = file2musts_n_bans(args.constraints) if args.constraints else ({},{})
 
     if args.dir:
         return read_local_scores(args.dir, len(valcounts))

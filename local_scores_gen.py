@@ -68,10 +68,10 @@ def gen_condtabs(contabs, valcounts):
             ps = s[:i]+s[i+1:]
             yield x, ps, condtab
 
-def gen_local_scores(condtabs, scorer, banned_parents, must_parents):
-    empty = frozenset()
+def gen_local_scores(condtabs, scorer, must_parents={}, banned_parents={}):
+    empty =set()
     for x, ps, condtab in condtabs:
-        pset = frozenset(ps)
+        pset = set(ps)
         has_banned_parents = len(banned_parents.get(x,empty) & pset)>0
         has_all_must_parents = must_parents.get(x, empty) <= pset
         if has_banned_parents or not has_all_must_parents:
@@ -86,8 +86,8 @@ def get_local_scores(local_scores_gen):
         local_scores[x][frozenset(ps)] = score
     return local_scores
 
-def data2local_scores(valcounts, data, scorer, bans={}, musts={}):
+def data2local_scores(valcounts, data, scorer, musts={}, bans={}):
     contabs = gen_contabs(data)
     condtabs = gen_condtabs(contabs, valcounts)
-    local_scores = gen_local_scores(condtabs, scorer, bans, musts)
+    local_scores = gen_local_scores(condtabs, scorer, musts, bans)
     return get_local_scores(local_scores)

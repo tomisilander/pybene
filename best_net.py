@@ -49,6 +49,7 @@ def add_args(parser:ArgumentParser):
     g.add_argument('--data')
     g.add_argument('--dir')
     add_score_args(parser)
+    parser.add_argument('--constraints')
     parser.add_argument('--worst', action='store_true')
     parser.add_argument('--vars', nargs='+', type=int)
     parser.add_argument('-o', '--outfile')
@@ -63,7 +64,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     add_args(parser)
     args = parser.parse_args()
-
     local_scores = args2local_scores(args)
     if args.worst:
         negate(local_scores)
