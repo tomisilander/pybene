@@ -1,7 +1,6 @@
 - do not optimize
 
 - implement Bayesian scores and NML scores
-- implement constraints
 - implement model-averaging
  
 - create image
@@ -12,10 +11,9 @@
 
 - plan cutting and how to use it
   - Take a big network
-  - cut a piece (remember the mapping between cut and orig variables)
+  - cut a piece == set of disjoint subsets (remember the mapping between cut and orig variables)
   	- by selecting a node and its boundary and its boundary etc.
+    - and restarting from a random node if piece does not have enough nodes 
   - optimize a piece
+    - fix the parents of variables that do have parents outside the piece
   - glue the piece back
-    - for each node in a piece choose between its new parents and old ones 
-    - BUT can you do that without creating cycles?
-      -NO YOU CANNOT 

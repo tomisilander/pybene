@@ -6,7 +6,6 @@ import numpy as np
 import torch
 from torch.sparse import sum as marginalize
 
-from scorer import Scorer
 from benetypes import *
 
 
@@ -69,9 +68,17 @@ def gen_condtabs(contabs, valcounts):
             ps = s[:i]+s[i+1:]
             yield x, ps, condtab
 
-def gen_local_scores(condtabs, scorer):
+def gen_local_scores(condtabs, scorer, banned_parents, must_parents):
+    empty = frozenset()
     for x, ps, condtab in condtabs:
-        yield x, ps, scorer.score(x,ps,condtab)
+        pset = frozenset(ps)
+        has_banned_parents = len(banned_parents.get(x,empty) & pset)>0
+        has_all_must_parents = must_parents.get(x, empty) <= pset
+        if has_banned_parents or not has_all_must_parents:
+            score = -np.inf
+        else:
+            score = scorer.score(x, ps, condtab)
+        yield x, ps, score
 
 def get_local_scores(local_scores_gen):
     local_scores = defaultdict(dict)
@@ -79,8 +86,8 @@ def get_local_scores(local_scores_gen):
         local_scores[x][frozenset(ps)] = score
     return local_scores
 
-def data2local_scores(valcounts, data, scorer):
+def data2local_scores(valcounts, data, scorer, bans={}, musts={}):
     contabs = gen_contabs(data)
     condtabs = gen_condtabs(contabs, valcounts)
-    local_scores = gen_local_scores(condtabs, scorer)
+    local_scores = gen_local_scores(condtabs, scorer, bans, musts)
     return get_local_scores(local_scores)

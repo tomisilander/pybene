@@ -37,6 +37,13 @@ def cut_piece(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
 
 
 rng = np.random.default_rng()
-g = nx.gnp_random_graph(20,0.2, directed=True)
-piece = cut_piece(g, 30, rng)
-print(piece.edges)
+g = nx.gnp_random_graph(40,0.2, directed=True)
+piece = cut_piece(g, 10, rng)
+
+# studying cutting policy - not promising
+piece_nodes = set(piece.nodes)
+free_nodes = {n for n in piece.nodes if set(g.predecessors(n)) <= piece_nodes}
+fixed_nodes = piece_nodes - free_nodes
+print(piece_nodes)
+print(free_nodes)
+print(fixed_nodes)
