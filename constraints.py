@@ -20,6 +20,7 @@ def expand_sets(triplets):
         pass
 
 def get_musts_and_bans(triplets, do_parents=True):
+    """for each node with constraint give set of must or banned parents"""
     musts, bans = set(), set()
     for t, src, dst in triplets:
     

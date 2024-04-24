@@ -3,6 +3,7 @@
 from argparse import ArgumentParser
 
 import numpy as np
+import torch
 
 from vd import fn2valcs
 from scorer import Scorer
@@ -19,11 +20,14 @@ def args2local_scores(args) -> LocalScores:
     if args.dir:
         return read_local_scores(args.dir, len(valcounts))
     else:        
-        # if there are vars could one then just read those
         data = read_data(args.data, valcounts)
         N = data.values().sum().item()
         scorer = Scorer(valcounts, N, args.score)
-        return data2local_scores(valcounts, data, scorer, bans=bans, musts=musts)
+        return get_local_scores(valcounts, data, scorer, musts, bans)
+
+def get_local_scores(valcounts: np.ndarray, data:torch.tensor,
+                     scorer:Scorer, musts={}, bans={}, ) -> LocalScores:
+    return data2local_scores(valcounts, data, scorer, musts=musts, bans=bans)
 
 def negate(scores:LocalScores):
     """in place"""

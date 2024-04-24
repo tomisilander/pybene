@@ -1,49 +1,48 @@
 import numpy as np
 import networkx as nx
+from itertools import chain
 
-def get_subset(g:nx.Graph, max_nof_nodes:int, rng:np.random.Generator) -> set:
-    """_select a random node and nodes around it_
-
-    Args:
-        g (nx.Graph): _a graph from which a subset will be selected_
-        max_nof_nodes (int): _maximum number of nodes selected_
-        rng (np.random.Generator): _random number generator_
-
-    Returns:
-        _set_: _set of nodes connected in g_
-    """
-    n = g.number_of_nodes()
-    if n<=max_nof_nodes:
-        return set(g.nodes)
-
-    i = rng.integers(n)
-    nset = {i}
-    free_space = max_nof_nodes - len(nset)
-    while free_space > 0:
-        bs = list(nx.node_boundary(g, nset))
-        nset |= set(rng.choice(bs, min(free_space, len(bs)), replace=False))
-        free_space = max_nof_nodes - len(nset)
-    return nset
-
-def cut_piece(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
-    ug = g.to_undirected()
-    nset = set()
-    while len(nset) < nof_nodes and ug.number_of_nodes() > 0:
-        nodes_left = nof_nodes - len(nset)
-        s = get_subset(ug, nodes_left, rng)
-        nset |= s
-        ug.remove_nodes_from(s)
+def get_random_dag(n, p, rng):
+    mx = rng.choice(2, p=(1-p, p), size=(n,n))
+    mx = np.tril(mx, k=-1)
+    return nx.from_numpy_array(mx, create_using=nx.DiGraph)
+    
+def get_free_nodes(g, nodes):
+    return {n for n in nodes if set(g.predecessors(n)) <= nodes}
+    
+def cut_ancestors(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
+    # return such a subgraph sg, consisting of ancestors of a random node n, that
+    # the subgraph has over nof_nodes of "free" nodes whose all parents are in sg
+    # but can I now optimize free nodes - no - searching for a correct cut
+    g = g.copy()
+    nset, new_parents = set(), set()
+    n = rng.choice(g.nodes)
+    print('start', n)
+    nset.add(n)
+    new_parents.add(n) 
+    while len(nset) < nof_nodes:
+        new_parents = set(chain(*map(g.predecessors, new_parents))) - nset
+        if not new_parents:
+            print('OOP')
+            break
+        nset.update(new_parents) # should I select randomly
+            
     return nx.subgraph(g, nset)
 
-
 rng = np.random.default_rng()
-g = nx.gnp_random_graph(40,0.2, directed=True)
-piece = cut_piece(g, 10, rng)
+g = get_random_dag(40 ,0.2, rng=rng
+                   )
+piece = cut_ancestors(g, 10, rng)
 
-# studying cutting policy - not promising
 piece_nodes = set(piece.nodes)
 free_nodes = {n for n in piece.nodes if set(g.predecessors(n)) <= piece_nodes}
 fixed_nodes = piece_nodes - free_nodes
 print(piece_nodes)
 print(free_nodes)
 print(fixed_nodes)
+
+# one should now optimise piece_nodes keeping edges of piece(!) to fixed nodes fixed 
+# One should then reglue the piece back to the net
+# One could also learn to cut pieces of correct size
+    
+          
