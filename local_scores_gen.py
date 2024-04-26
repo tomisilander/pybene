@@ -8,12 +8,14 @@ from torch.sparse import sum as marginalize
 
 from benetypes import *
 
-
-def read_data(filename:str, valcounts:np.ndarray) -> torch.tensor:
-    """reads data to a (sparse) torch tensor"""
-    i = np.loadtxt(filename, dtype=int).transpose()
+def data_mx_to_coo(mx, valcounts):
+    i = mx.transpose()
     v = torch.ones(i.shape[1], dtype=int)
     return torch.sparse_coo_tensor(i,v,tuple(valcounts)).coalesce()
+    
+def read_data(filename:str, valcounts:np.ndarray) -> torch.tensor:
+    """reads data to a (sparse) torch tensor"""
+    return data_mx_to_coo(np.loadtxt(filename, dtype=int), valcounts)
 
 def gen_sets_down(bitset, first_out_ix):
     """recursively find which variable should be marginalized out and from where"""

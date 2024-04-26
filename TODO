@@ -1,4 +1,5 @@
-- implements constraints better than only from files
+- if called for selected vars - no need to gather all local scores !!! 
+- in general - need work to support using a subset of variables
 - do not optimize
 
 - implement Bayesian scores and NML scores

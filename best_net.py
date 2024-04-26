@@ -54,11 +54,11 @@ def add_args(parser:ArgumentParser):
     parser.add_argument('--vars', nargs='+', type=int)
     parser.add_argument('-o', '--outfile')
 
-def save(net:Net, outfile):
+def save_net(net:Net, outfile):
     outpath = pathlib.Path(outfile)
     outdir = outpath.parent
     outdir.mkdir(parents=True, exist_ok=True)
-    pickle.dump(net,outpath.open('w'))
+    pickle.dump(net, outpath.open('wb'))
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -67,9 +67,9 @@ if __name__ == '__main__':
     local_scores = args2local_scores(args)
     if args.worst:
         negate(local_scores)
-    bDP = BeneDP(local_scores)    
-    S = frozenset(args.vars) if args.vars else bDP.all_vars
+    bDP = BeneDP(local_scores)
+    S = frozenset(args.vars) if args.vars else bDP.all_vars 
     best_net = best_net_in_S(S, bDP)
     print(best_net, bDP.best_net_score_in[S])
     if args.outfile:
-        save(best_net, args.outfile)
+        save_net(best_net, args.outfile)
