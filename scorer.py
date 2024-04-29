@@ -2,12 +2,11 @@
 
 import numpy as np
 from scipy.special import entr as _nlogn
-from scipy.stats import entropy
 
 class Scorer():
 
     def __init__(self, valcounts, N, score='BIC', **kwargs):
-        self.valcounts = np.array(valcounts)
+        self.set_valcounts(valcounts)
         self.kwargs = kwargs
 
         # some helpers
@@ -26,6 +25,9 @@ class Scorer():
 
         self.score_fn = self.score_fns[score]
 
+    def set_valcounts(self, valcounts):
+        self.valcounts = np.asarray(valcounts)
+        
     def log_ml(self, child_freqs):
         parent_freqs = child_freqs.sum(axis=1)
         res = -np.sum(_nlogn(child_freqs))   

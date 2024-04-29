@@ -14,13 +14,24 @@ from local_scores import add_score_args, negate, Scorer, get_local_scores, file2
 from local_scores_gen import data_mx_to_coo
 from best_net import best_net_in_S
 
+def reindex_set(s, rixer):
+    return set(map(rixer.get, s))
+
 def reindex_dict_of_sets(d:dict[int,set[int]], rixer:dict[int,int], keys:Iterator[int]):
     for key in keys:
         if key in d:
-            yield (rixer[key],set(map(rixer.get, d[key])))
+            yield (rixer[key], reindex_set(d[key], rixer))
 
+def project_by_vars(valcounts, data, musts, bans, vars):
+    valcounts = [valcounts[v] for v in vars]
+    data = data[:,vars]
+
+    var2ix = {v:i for (i,v) in enumerate(vars)}
+    musts = dict(reindex_dict_of_sets(musts, var2ix, vars))
+    bans = dict(reindex_dict_of_sets(bans, var2ix, vars))
+    
 def args2local_scores(args, vars:Iterator[int]) -> LocalScores:
-    print (vars)
+
     vars = sorted(vars)
     valcounts = fn2valcs(args.vd_file)
     valcounts = [valcounts[v] for v in vars]
@@ -36,6 +47,7 @@ def args2local_scores(args, vars:Iterator[int]) -> LocalScores:
     N = data.values().sum().item()
     
     scorer = Scorer(valcounts, N, args.score)
+    print('VC', valcounts, scorer.valcounts)
     ls =  get_local_scores(valcounts, data, scorer, musts, bans)
     return ls
 
