@@ -1,64 +1,43 @@
 #!/usr/bin/env python
 
-from typing import Iterator, Sequence
+from typing import Iterator
 from argparse import ArgumentParser
 import pathlib
 import pickle
 
+import numpy as np
+
 from benetypes import *
 from beneDP import BeneDP
 from vd import fn2valcs
-from local_scores import add_score_args, negate
+from local_scores import add_score_args, negate, Scorer, get_local_scores, file2musts_n_bans
+from local_scores_gen import data_mx_to_coo
+from best_net import best_net_in_S
 
+def reindex_dict_of_sets(d:dict[int,set[int]], rixer:dict[int,int], keys:Iterator[int]):
+    for key in keys:
+        if key in d:
+            yield (rixer[key],set(map(rixer.get, d[key])))
 
-def args2local_scores(args, vars) -> LocalScores:
+def args2local_scores(args, vars:Iterator[int]) -> LocalScores:
+    print (vars)
     vars = sorted(vars)
     valcounts = fn2valcs(args.vd_file)
     valcounts = [valcounts[v] for v in vars]
-    var2ix = {v:i for (i,v) in enumerate(vars)}
 
-    musts, bans = file2musts_n_bans(args.constraints) if args.constraints else ({},{})
     # reindex musts and bans
+    var2ix = {v:i for (i,v) in enumerate(vars)}
+    musts, bans = file2musts_n_bans(args.constraints) if args.constraints else ({},{})
+    musts = dict(reindex_dict_of_sets(musts, var2ix, vars))
+    bans = dict(reindex_dict_of_sets(bans, var2ix, vars))
 
-    data = read_data(args.data, valcounts)
-    # read only vars
-
+    # just read relevant data - hmm, could be already in memory    
+    data = data_mx_to_coo(np.loadtxt(args.data_file, usecols=vars), valcounts)
     N = data.values().sum().item()
+    
     scorer = Scorer(valcounts, N, args.score)
-    return get_local_scores(valcounts, data, scorer, musts, bans)
-
-def best_net_in_S(S : Varset, bDP : BeneDP) -> Net:
-
-    def gen_best_order_in_S(S : Varset)  -> Iterator[Var]:
-
-        def best_sink_in_S(S : Varset) -> Var:
-
-            def gen_sink_scores():
-                for x in S:
-                    S_x = S - {x}
-                    parents = bDP.best_parents_4in[x][S_x]
-                    parents_score = bDP.local_scores[x][parents]
-                    score = bDP.best_net_score_in[S_x] + parents_score
-                    yield  (score, x)
-
-            return max(gen_sink_scores())[1]
-
-        if len(S)==0 : return
-        s = best_sink_in_S(S)
-        yield from gen_best_order_in_S(S-{s})
-        yield s
-
-    def best_net_for_order(S : Varset, order : Sequence[Var]) -> Net :
-        if len(order) == 0:
-            return dict()
-        sink = order[-1]
-        S_sink = S - {sink}
-        best_net = best_net_for_order(S_sink, order[:-1])
-        best_net.update({sink : bDP.best_parents_4in[sink][S_sink]})
-        return  best_net
-
-    order = list(gen_best_order_in_S(S))
-    return best_net_for_order(S, order)
+    ls =  get_local_scores(valcounts, data, scorer, musts, bans)
+    return ls
 
 def add_args(parser:ArgumentParser):
     parser.add_argument('vd_file')
@@ -80,12 +59,14 @@ if __name__ == '__main__':
     add_args(parser)
     args = parser.parse_args()
     
-    local_scores = args2local_scores(args)
+    local_scores = args2local_scores(args, args.vars)
     if args.worst:
         negate(local_scores)
     bDP = BeneDP(local_scores)
-    S = frozenset(args.vars) if args.vars else bDP.all_vars 
+    S = bDP.all_vars 
     best_net = best_net_in_S(S, bDP)
+    ix2var = dict(enumerate(args.vars))
+    best_net = dict(reindex_dict_of_sets(best_net, ix2var, best_net))
     print(best_net, bDP.best_net_score_in[S])
     if args.outfile:
         save_net(best_net, args.outfile)

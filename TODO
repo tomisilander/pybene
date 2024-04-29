@@ -1,5 +1,4 @@
-- if called for selected vars - no need to gather all local scores !!! 
-- in general - need work to support using a subset of variables
+- project valcounts, data and constraints to vars
 - do not optimize
 
 - implement Bayesian scores and NML scores
