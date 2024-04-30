@@ -1,6 +1,4 @@
 - test improve
-- implement big score_table to keep track of improvement (if any)
-
 - do not optimize
 
 - implement Bayesian scores and NML scores

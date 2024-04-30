@@ -61,14 +61,16 @@ def cut_ancestors(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
 
 class Improver():
 
-    def __init__(self, valcounts, data_mx, musts, bans, scorer, rng):
-        # type annotate later 
+    def __init__(self, g, valcounts, data_mx, musts, bans, scorer, rng):
+        # type annotate later
+        self.g = g 
         self.valcounts = valcounts
         self.data_mx = data_mx
         self.musts = musts 
         self.bans = bans
         self.scorer = scorer
         self.rng = rng
+        self.score_table = self.get_score_table(g)
         
     def get_score_table(self, g):
         score_table = [((),0.0)] * len(self.valcounts)
@@ -76,9 +78,11 @@ class Improver():
             score_table[v] = (ps, s)
         return score_table
     
-    def improve(self, g):
+    def improve(self):
         # cut a piece and identify free nodes that can get new parents from within piece
 
+        g = self.g
+        
         piece = cut_ancestors(g, 10, self.rng)
         piece_nodes = set(piece.nodes)
         free_nodes = {n for n in piece.nodes if set(g.predecessors(n)) <= piece_nodes}
@@ -100,6 +104,7 @@ class Improver():
         self.scorer.set_valcounts(valcounts)
         local_scores = get_local_scores(valcounts, data_mx, self.scorer, musts, bans)
         
+        print(sum(local_scores[n][ps] for n, ps in local_scores.items()))
         # if args.worst:
             # negate(local_scores)
         bDP = BeneDP(local_scores)
@@ -115,31 +120,33 @@ class Improver():
         
         g.remove_edges_from(to_be_removed)
         g.add_edges_from(to_be_added)
-        
+
         
 def get_random_graph(n, p, rng):
     return get_random_dag(n ,p, rng)
 
     
 def args_2_big_net(args):
-
     valcounts = fn2valcs(args.vd_file)
+    data_mx = np.loadtxt(args.data_file)
+    N,n = data_mx.shape
+
+    g = load_bn(args.bn_file) if args.bn_file else nx.empty_graph(n, create_using=nx.DiGraph)
 
     musts, bans = file2musts_n_bans(args.constraints) if args.constraints else ({},{})
 
-    data_mx = np.loadtxt(args.data_file)
     
-    N = data_mx.shape[0]
     scorer = Scorer(valcounts, N, args.score)
     
     rng = np.random.default_rng(args.seed)
-        
-    improver = Improver(valcounts, data_mx, musts, bans, scorer, rng)
-    g = load_bn(args.bn_file)
-    st = improver.get_score_table(g)
 
-    total_score = sum(s for (_p,s) in st)
-    
+    improver = Improver(g, valcounts, data_mx, musts, bans, scorer, rng)
+
+    improver.improve()
+
+    total_score = sum(s for (_p,s) in improver.score_table)
+    print(total_score)
+        
     return g, total_score
   
 
