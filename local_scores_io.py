@@ -3,7 +3,7 @@
 from pathlib import Path
 from array import array
 from typing import Iterator
-from benetypes import *
+from .benetypes import *
 
 def int2set(x:int) -> Varset:
 

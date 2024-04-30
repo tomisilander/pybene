@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from itertools import combinations
-from benetypes import *
+from .benetypes import *
 
 class BeneDP():
 

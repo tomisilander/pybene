@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch.sparse import sum as marginalize
 
-from benetypes import *
+from .benetypes import *
 
 def data_mx_to_coo(mx, valcounts):
     i = mx.transpose()
@@ -43,7 +43,7 @@ def gen_contabs(start_contab):
         contabs[var_count-1] = (new_vars, new_contab)
         yield contabs[var_count-1]
 
-def contab2condtab(contab, i, valcount):
+def contab2condtab(contab, i:int, valcount:int):
     cfgs  = contab.indices().numpy().transpose()
     i_vals = cfgs[:,i]
     freqs = contab.values().numpy()

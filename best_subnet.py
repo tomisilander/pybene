@@ -7,12 +7,12 @@ import pickle
 
 import numpy as np
 
-from benetypes import *
-from beneDP import BeneDP
-from vd import fn2valcs
-from local_scores import add_score_args, negate, Scorer, get_local_scores, file2musts_n_bans
-from local_scores_gen import data_mx_to_coo
-from best_net import best_net_in_S
+from .benetypes import *
+from .beneDP import BeneDP
+from .vd import fn2valcs
+from .local_scores import add_score_args, negate, Scorer, get_local_scores, file2musts_n_bans
+from .local_scores_gen import data_mx_to_coo
+from .best_net import best_net_in_S
 
 def reindex_set(s, rixer):
     return set(map(rixer.get, s))

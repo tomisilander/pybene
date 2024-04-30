@@ -5,10 +5,10 @@ from argparse import ArgumentParser
 import pathlib
 import pickle
 
-from benetypes import *
-from beneDP import BeneDP
-from vd import fn2valcs
-from local_scores import add_score_args, args2local_scores, negate
+from .benetypes import *
+from .beneDP import BeneDP
+from .vd import fn2valcs
+from .local_scores import add_score_args, args2local_scores, negate
 
 def best_net_in_S(S : Varset, bDP : BeneDP) -> Net:
 
