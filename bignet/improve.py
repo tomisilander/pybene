@@ -101,11 +101,12 @@ class Improver():
         spiece_nodes = sorted(piece_nodes)
         valcounts,data_mx,musts,bans = project_by_vars(self.valcounts, self.data_mx, 
                                                        musts, bans, spiece_nodes)
-        self.scorer.set_valcounts(valcounts)
-        local_scores = get_local_scores(valcounts, data_mx, self.scorer, musts, bans)
         
-        print(sum(local_scores[n][ps] for n, ps in local_scores.items()))
-        # if args.worst:
+        data_coo = data_mx_to_coo(data_mx, valcounts)
+        self.scorer.set_valcounts(valcounts)
+
+        local_scores = get_local_scores(valcounts, data_coo, self.scorer, musts, bans)
+                 # if args.worst:
             # negate(local_scores)
         bDP = BeneDP(local_scores)
         S = bDP.all_vars 
@@ -113,10 +114,10 @@ class Improver():
         
         # One should then reglue the piece back to the net
         ix2var = dict(enumerate(spiece_nodes))
-        best_net = reindex_dict_of_sets(best_net, ix2var, spiece_nodes)
-        
+        best_net = dict(reindex_dict_of_sets(best_net, ix2var, spiece_nodes))
+        print(best_net, free_nodes)
         to_be_removed = [(p,n) for n in free_nodes for p in g.predecessors(n)]
-        to_be_added =   [(p,n) for n in free_nodes for p in best_net[n]]
+        to_be_added =   [(p,n) for n in free_nodes for p in best_net.get(n,())]
         
         g.remove_edges_from(to_be_removed)
         g.add_edges_from(to_be_added)
