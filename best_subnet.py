@@ -29,7 +29,6 @@ def project_by_vars(valcounts, data, musts, bans, vars):
     var2ix = {v:i for (i,v) in enumerate(vars)}
     musts = dict(reindex_dict_of_sets(musts, var2ix, vars))
     bans = dict(reindex_dict_of_sets(bans, var2ix, vars))
-    
     return valcounts, data, musts, bans
     
 def args2local_scores(args, vars:Iterator[int]) -> LocalScores:

@@ -25,9 +25,9 @@ def args2local_scores(args) -> LocalScores:
         scorer = Scorer(valcounts, N, args.score)
         return get_local_scores(valcounts, data, scorer, musts, bans)
 
-def get_local_scores(valcounts: np.ndarray, data:torch.tensor,
-                     scorer:Scorer, musts={}, bans={}, ) -> LocalScores:
-    return data2local_scores(valcounts, data, scorer, musts=musts, bans=bans)
+def get_local_scores(data:torch.tensor, scorer:Scorer, 
+                     musts={}, bans={}) -> LocalScores:
+    return data2local_scores(data, scorer, musts=musts, bans=bans)
 
 def negate(scores:LocalScores):
     """in place"""

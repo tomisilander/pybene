@@ -14,24 +14,26 @@ from ..constraints import file2musts_n_bans
 from ..beneDP import BeneDP
 from ..common import load_bn
 
-def get_score(g, valcounts, data_mx, v, scorer):
+def get_score(g, data_mx, v, scorer):
+    valcounts = scorer.valcounts
+    assert data_mx.shape[1] == len(valcounts)
     ps = sorted(g.predecessors(v))
     vps = [v] + ps
     vps_mx = data_mx[:, vps]
     contab = data_mx_to_coo(vps_mx, [valcounts[vp] for vp in vps])
     condtab = contab2condtab(contab, 0, valcounts[v])
+    # print('getting score',v,ps,condtab)
     score = scorer.score(v, ps, condtab)
     return v, ps, score
 
-def gen_scores(g, valcounts, data_mx, vars, scorer):
+def gen_scores(g, data_mx, vars, scorer):
     for v in vars:
-        yield get_score(g, valcounts, data_mx, v, scorer)
+        yield get_score(g, data_mx, v, scorer)
 
-def score_net(g, valcounts, data_mx, scorer):
+def score_net(g, data_mx, scorer):
     for v in g.nodes:
-        yield get_score(g, valcounts, data_mx, v, scorer)
-
-        
+        yield get_score(g, data_mx, v, scorer)
+      
 def get_random_dag(n:int, p:float, rng):
     mx = rng.choice(2, p=(1-p, p), size=(n,n))
     mx = np.tril(mx, k=-1)
@@ -61,10 +63,10 @@ def cut_ancestors(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
 
 class Improver():
 
-    def __init__(self, g, valcounts, data_mx, musts, bans, scorer, rng):
+    def __init__(self, g, data_mx, musts, bans, scorer, rng):
         # type annotate later
         self.g = g 
-        self.valcounts = valcounts
+        self.orig_valcounts = scorer.valcounts
         self.data_mx = data_mx
         self.musts = musts 
         self.bans = bans
@@ -73,49 +75,82 @@ class Improver():
         self.score_table = self.get_score_table(g)
         
     def get_score_table(self, g):
-        score_table = [((),0.0)] * len(self.valcounts)
-        for v,ps, s in score_net(g, self.valcounts, self.data_mx, self.scorer):
+        score_table = [((),0.0)] * len(self.scorer.valcounts)
+        for v,ps, s in score_net(g, self.data_mx, self.scorer):
             score_table[v] = (ps, s)
         return score_table
     
     def improve(self):
-        # cut a piece and identify free nodes that can get new parents from within piece
+        """Takes a piece of graph, optimizes it, and glues it back. 
+           This should never make the results worse."""
 
         g = self.g
+
+        # CUT a piece and identify free nodes that can get new parents from within piece
         
         piece = cut_ancestors(g, 10, self.rng)
         piece_nodes = set(piece.nodes)
         free_nodes = {n for n in piece.nodes if set(g.predecessors(n)) <= piece_nodes}
-        fixed_nodes = piece_nodes - free_nodes
+        fixed_nodes = piece_nodes - free_nodes # should keep their parents 
 
-        # print(piece_nodes)
-        # print(free_nodes)
-        # print(fixed_nodes)
-
-        # optimice piece
-
-        musts = {n:set(p for p in g.predecessors(n) if p in piece_nodes) 
-                       for n in fixed_nodes}
-        bans = {n:free_nodes for n in fixed_nodes}
+        musts = {n : set(p for p in g.predecessors(n) if p in piece_nodes) 
+                       for n in fixed_nodes} 
+        bans = {n:set(p for p in piece_nodes if not p in g.predecessors(n))  
+                      for n in fixed_nodes}
 
         spiece_nodes = sorted(piece_nodes)
-        valcounts,data_mx,musts,bans = project_by_vars(self.valcounts, self.data_mx, 
-                                                       musts, bans, spiece_nodes)
-        
-        data_coo = data_mx_to_coo(data_mx, valcounts)
-        self.scorer.set_valcounts(valcounts)
 
-        local_scores = get_local_scores(valcounts, data_coo, self.scorer, musts, bans)
-                 # if args.worst:
-            # negate(local_scores)
-        bDP = BeneDP(local_scores)
-        S = bDP.all_vars 
-        best_net = best_net_in_S(S, bDP)
+        # report the scores of the free nodes in a piece 
+        print('free nodes:')
+        tot_before = 0.0
+        for n in free_nodes:
+            p,s = self.score_table[n]
+            print(n, p, s)
+            tot_before += s
+        print('Tot: ',tot_before)
+        print()
+
+        # OPTIMIZE PIECE
+
+        # HEY! should also include old musts and bans
+
+        # project to new indices
+        prj_valcounts, prj_data_mx, prj_musts, prj_bans \
+            = project_by_vars(self.scorer.valcounts, self.data_mx, musts, bans, spiece_nodes)
         
-        # One should then reglue the piece back to the net
+        prj_data_coo = data_mx_to_coo(prj_data_mx, prj_valcounts)
+
+        # new scorer too
+        piece_scorer = Scorer(prj_valcounts, prj_data_mx.shape[0], 
+                              self.scorer.score_name, **self.scorer.kwargs)
+
+        prj_local_scores = get_local_scores(prj_data_coo, piece_scorer, prj_musts, prj_bans)
+        # if args.worst:
+            # negate(local_scores)
+        bDP = BeneDP(prj_local_scores)
+        best_net = best_net_in_S(bDP.all_vars, bDP)
+
+
+        # report the scores of the free nodes in an optimized piece 
         ix2var = dict(enumerate(spiece_nodes))
-        best_net = dict(reindex_dict_of_sets(best_net, ix2var, spiece_nodes))
-        print(best_net, free_nodes)
+        best_edges = ((p,c) for c,ps in best_net.items() for p in ps)
+        best_g = nx.DiGraph()
+        best_g.add_edges_from(best_edges)
+
+        print('free nodes after:')
+        tot_after = 0.0
+        for n,p,s in score_net(best_g, prj_data_mx, piece_scorer):
+            v = ix2var[n]
+            if v in free_nodes:
+                print(v,tuple(map(ix2var.get,p)),s)
+                tot_after += s
+        print('Tot:', tot_after, 'Improvement: ', tot_after-tot_before)
+        print() 
+        
+                       
+                       
+        # REPLACE THE PIECE WITH AN OPTIMIZED ONE
+        best_net = dict(reindex_dict_of_sets(best_net, ix2var, range(len(spiece_nodes))))
         to_be_removed = [(p,n) for n in free_nodes for p in g.predecessors(n)]
         to_be_added =   [(p,n) for n in free_nodes for p in best_net.get(n,())]
         
@@ -141,12 +176,14 @@ def args_2_big_net(args):
     
     rng = np.random.default_rng(args.seed)
 
-    improver = Improver(g, valcounts, data_mx, musts, bans, scorer, rng)
+    improver = Improver(g, data_mx, musts, bans, scorer, rng)
+    print('start', sum(s for (_p,s) in improver.score_table))
 
-    improver.improve()
-
-    total_score = sum(s for (_p,s) in improver.score_table)
-    print(total_score)
+    for r in range(50):
+        improver.improve()
+        improver.score_table = improver.get_score_table(improver.g)        
+        total_score = sum(s for (_p,s) in improver.score_table)
+        print(total_score)
         
     return g, total_score
   
@@ -158,7 +195,7 @@ def add_args(parser:ArgumentParser):
     parser.add_argument('--constraints')
     parser.add_argument('--outfile')
     
-    parser.add_argument('--seed', type=float)
+    parser.add_argument('--seed', type=int)
     add_score_args(parser)
 
 

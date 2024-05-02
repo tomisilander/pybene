@@ -6,7 +6,9 @@ from scipy.special import entr as _nlogn
 class Scorer():
 
     def __init__(self, valcounts, N, score='BIC', **kwargs):
-        self.set_valcounts(valcounts)
+        self.valcounts = np.asarray(valcounts)
+        self.N = N
+        self.score_name = score
         self.kwargs = kwargs
 
         # some helpers
@@ -25,9 +27,6 @@ class Scorer():
 
         self.score_fn = self.score_fns[score]
 
-    def set_valcounts(self, valcounts):
-        self.valcounts = np.asarray(valcounts)
-        
     def log_ml(self, child_freqs):
         parent_freqs = child_freqs.sum(axis=1)
         res = -np.sum(_nlogn(child_freqs))   

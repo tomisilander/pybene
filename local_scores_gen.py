@@ -88,8 +88,8 @@ def get_local_scores(local_scores_gen):
         local_scores[x][frozenset(ps)] = score
     return local_scores
 
-def data2local_scores(valcounts, data, scorer, musts={}, bans={}):
+def data2local_scores(data, scorer, musts={}, bans={}):
     contabs = gen_contabs(data)
-    condtabs = gen_condtabs(contabs, valcounts)
+    condtabs = gen_condtabs(contabs, scorer.valcounts)
     local_scores = gen_local_scores(condtabs, scorer, musts, bans)
     return get_local_scores(local_scores)
