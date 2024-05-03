@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -15,7 +16,9 @@ from .constraints import file2musts_n_bans
 def args2local_scores(args) -> LocalScores:
     valcounts = fn2valcs(args.vd_file)
 
-    musts, bans = file2musts_n_bans(args.constraints) if args.constraints else ({},{})
+    musts, bans = defaultdict(set), defaultdict(set)
+    if args.constraints:
+        musts, bans = file2musts_n_bans(args.constraints)
 
     if args.dir:
         return read_local_scores(args.dir, len(valcounts))

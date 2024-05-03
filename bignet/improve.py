@@ -3,6 +3,7 @@ import numpy.typing as npt
 import networkx as nx
 from itertools import chain
 from argparse import ArgumentParser
+from collections import defaultdict
 
 from ..local_scores import add_score_args, get_local_scores
 from ..local_scores_gen import data_mx_to_coo, contab2condtab
@@ -109,15 +110,16 @@ class Improver():
         piece_nodes = set(piece.nodes)
         free_nodes = {n for n in piece.nodes if set(g.predecessors(n)) <= piece_nodes}
         fixed_nodes = piece_nodes - free_nodes # should keep their parents 
-
-        musts = {n : set(p for p in g.predecessors(n) if p in piece_nodes) 
+        
+        musts = {n : (set(g.predecessors(n)) | self.musts[n]) & piece_nodes 
                        for n in fixed_nodes} 
-        bans = {n:set(p for p in piece_nodes if not p in g.predecessors(n))  
+        bans  = {n : piece_nodes - set(g.predecessors(n))   
                       for n in fixed_nodes}
 
         # HEY! should also include old musts and bans
 
         spiece_nodes = sorted(piece_nodes)
+        
         new_bans = parentize(gen_banned_decendants(g,piece_nodes))
         for n, nbs in new_bans.items():
             bans[n] = bans.get(n,set()) | nbs
@@ -197,8 +199,9 @@ def args_2_big_net(args):
 
     g = load_bn(args.bn_file) if args.bn_file else nx.empty_graph(n, create_using=nx.DiGraph)
 
-    musts, bans = file2musts_n_bans(args.constraints) if args.constraints else ({},{})
-
+    musts, bans = defaultdict(set), defaultdict(set)
+    if args.constraints:
+        musts, bans = file2musts_n_bans(args.constraints)
     
     scorer = Scorer(valcounts, N, args.score)
     
@@ -216,7 +219,6 @@ def args_2_big_net(args):
         if ic:
             print(ic)
             assert not ic
-        print('PRE 14', list(g.predecessors(14)))
     return g, total_score
   
 

@@ -1,4 +1,8 @@
-- test improve
+- parametrize improver
+  - number of rounds or other stopping criteria based on gathered statistics
+  - size of the piece
+- add cutters such as subtree
+- add many startpoints (reoient tree)
 - do not optimize
 
 - implement Bayesian scores and NML scores
@@ -17,6 +21,7 @@
     - and restarting from a random node if piece does not have enough nodes 
   - optimize a piece
     - fix the parents of variables that do have parents outside the piece
+    - do not allow backpaths outside the piece
   - glue the piece back
 
 

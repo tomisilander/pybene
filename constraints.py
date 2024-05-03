@@ -1,4 +1,6 @@
-#!/isr/bin/env python
+#!/usr/bin/env python
+
+from collections import defaultdict
 
 def get_t_src_dstn(cstrfile:str):
     for i,l in enumerate(open(cstrfile)):
@@ -43,7 +45,7 @@ def get_musts_and_bans(triplets, do_parents=True):
     return musts, bans
 
 def parentize(arcs):
-    parents = {}
+    parents = defaultdict(set)
     for (src,dst) in arcs:
         parents.setdefault(dst,set()).add(src)
     return parents
