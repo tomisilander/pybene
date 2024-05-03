@@ -44,9 +44,8 @@ def get_free_nodes(g, nodes):
     return {n for n in nodes if set(g.predecessors(n)) <= nodes}
     
 def cut_ancestors(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
-    # return such a subgraph sg, consisting of ancestors of a random node n, that
-    # the subgraph has over nof_nodes of "free" nodes whose all parents are in sg
-    # but can I now optimize free nodes - no - searching for a correct cut
+    # return a subset of nodes of max size nof_nodes by searching the ancestors 
+    # of a random node (selecting the node should be done outside though)
     g = g.copy()
     nset, new_parents = set(), set()
     n = rng.choice(g.nodes)
@@ -58,7 +57,10 @@ def cut_ancestors(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
         if not new_parents:
             print('OOP')
             break
-        nset.update(new_parents) # should I select randomly
+        nof_needed = nof_nodes - len(nset)
+        to_be_added = new_parents if len(new_parents) <= nof_needed \
+                      else set(list(new_parents)[:nof_needed])
+        nset.update(to_be_added)
             
     return nx.subgraph(g, nset)
 
