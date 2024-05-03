@@ -23,6 +23,7 @@ def reindex_dict_of_sets(d:dict[int,set[int]], rixer:dict[int,int], keys:Iterato
             yield (rixer[key], reindex_set(d[key], rixer))
 
 def project_by_vars(valcounts, data, musts, bans, vars):
+    # shoud we sort vars
     valcounts = [valcounts[v] for v in vars]
     data = data[:,vars]
 

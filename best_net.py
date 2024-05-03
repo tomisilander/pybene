@@ -5,6 +5,8 @@ from argparse import ArgumentParser
 import pathlib
 import pickle
 
+import networkx as nx
+
 from .benetypes import *
 from .beneDP import BeneDP
 from .vd import fn2valcs
@@ -53,6 +55,7 @@ def add_args(parser:ArgumentParser):
     parser.add_argument('--worst', action='store_true')
     parser.add_argument('--vars', nargs='+', type=int)
     parser.add_argument('-o', '--outfile')
+    parser.add_argument('--dotfile')
 
 def save_net(net:Net, outfile):
     outpath = pathlib.Path(outfile)
@@ -73,3 +76,5 @@ if __name__ == '__main__':
     print(best_net, bDP.best_net_score_in[S])
     if args.outfile:
         save_net(best_net, args.outfile)
+    if args.dotfile:
+        nx.nx_agraph.write_dot(best_net, args.dotfile)

@@ -10,7 +10,7 @@ from ..scorer import Scorer
 from ..best_net import add_args, save_net, best_net_in_S, negate
 from ..best_subnet import project_by_vars, reindex_dict_of_sets, reindex_set
 from ..vd import fn2valcs
-from ..constraints import file2musts_n_bans
+from ..constraints import file2musts_n_bans, parentize
 from ..beneDP import BeneDP
 from ..common import load_bn
 
@@ -61,6 +61,23 @@ def cut_ancestors(g: nx.Graph, nof_nodes:int, rng:np.random.Generator) -> set:
             
     return nx.subgraph(g, nset)
 
+def is_cyclic(g:nx.DiGraph) -> bool:
+    try: 
+        return nx.find_cycle(g, orientation='original')
+    except nx.NetworkXNoCycle:
+        return False
+
+def gen_banned_decendants(g:nx.DiGraph, s:set):
+    for n in s:
+        decs = nx.descendants(g, n)
+        targets = s & decs
+        vias = {t:set() for t in targets}
+        for path in nx.all_simple_paths(g,n,targets):
+            vias[path[-1]] |= set(path)
+        for d, viaset in vias.items():
+            if not viaset <= s:
+                yield (d,n)
+
 class Improver():
 
     def __init__(self, g, data_mx, musts, bans, scorer, rng):
@@ -98,12 +115,22 @@ class Improver():
         bans = {n:set(p for p in piece_nodes if not p in g.predecessors(n))  
                       for n in fixed_nodes}
 
-        spiece_nodes = sorted(piece_nodes)
+        # HEY! should also include old musts and bans
 
+        spiece_nodes = sorted(piece_nodes)
+        new_bans = parentize(gen_banned_decendants(g,piece_nodes))
+        for n, nbs in new_bans.items():
+            bans[n] = bans.get(n,set()) | nbs
+            
+        print(spiece_nodes)
         # report the scores of the free nodes in a piece 
+        print('fixed nodes:')
+        for n in sorted(fixed_nodes):
+            p,s = self.score_table[n]
+            print(n, p, s)
         print('free nodes:')
         tot_before = 0.0
-        for n in free_nodes:
+        for n in sorted(free_nodes):
             p,s = self.score_table[n]
             print(n, p, s)
             tot_before += s
@@ -111,8 +138,6 @@ class Improver():
         print()
 
         # OPTIMIZE PIECE
-
-        # HEY! should also include old musts and bans
 
         # project to new indices
         prj_valcounts, prj_data_mx, prj_musts, prj_bans \
@@ -137,12 +162,16 @@ class Improver():
         best_g = nx.DiGraph()
         best_g.add_edges_from(best_edges)
 
+        print('fixed nodes:')
+        for n in sorted(fixed_nodes):
+            p,s = self.score_table[n]
+            print(n, p, s)
         print('free nodes after:')
         tot_after = 0.0
-        for n,p,s in score_net(best_g, prj_data_mx, piece_scorer):
+        for n,ps,s in sorted(score_net(best_g, prj_data_mx, piece_scorer)):
             v = ix2var[n]
             if v in free_nodes:
-                print(v,tuple(map(ix2var.get,p)),s)
+                print(v,sorted(tuple(map(ix2var.get,ps))),s)
                 tot_after += s
         print('Tot:', tot_after, 'Improvement: ', tot_after-tot_before)
         print() 
@@ -156,7 +185,6 @@ class Improver():
         
         g.remove_edges_from(to_be_removed)
         g.add_edges_from(to_be_added)
-
         
 def get_random_graph(n, p, rng):
     return get_random_dag(n ,p, rng)
@@ -184,7 +212,11 @@ def args_2_big_net(args):
         improver.score_table = improver.get_score_table(improver.g)        
         total_score = sum(s for (_p,s) in improver.score_table)
         print(total_score)
-        
+        ic =  is_cyclic(improver.g)
+        if ic:
+            print(ic)
+            assert not ic
+        print('PRE 14', list(g.predecessors(14)))
     return g, total_score
   
 
@@ -194,6 +226,7 @@ def add_args(parser:ArgumentParser):
     parser.add_argument('--bn-file')
     parser.add_argument('--constraints')
     parser.add_argument('--outfile')
+    parser.add_argument('--dotfile')
     
     parser.add_argument('--seed', type=int)
     add_score_args(parser)
@@ -208,3 +241,5 @@ if __name__ == '__main__':
     print(best_net, best_score)
     if args.outfile:
         save_net(best_net, args.outfile)
+    if args.dotfile:
+        nx.nx_agraph.write_dot(best_net, args.dotfile)
