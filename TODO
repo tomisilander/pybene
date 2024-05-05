@@ -1,8 +1,9 @@
 - parametrize improver
   - number of rounds or other stopping criteria based on gathered statistics
   - size of the piece
-- add cutters such as subtree
-- add many startpoints (reoient tree)
+- add cutters such as subtree and line
+- add many startpoints (reorient tree)
+  - compute node distances in d to select scattered startpoints
 - do not optimize
 
 - implement Bayesian scores and NML scores
