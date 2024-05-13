@@ -1,8 +1,9 @@
+- split bignet to separate package
 - parametrize improver
   - number of rounds or other stopping criteria based on gathered statistics
   - size of the piece
 - add cutters such as subtree
-- add many startpoints (reoient tree)
+- add many startpoints (to reorient tree)
 - do not optimize
 
 - implement Bayesian scores and NML scores
