@@ -26,7 +26,7 @@ def args2local_scores(args) -> LocalScores:
         data = read_data(args.data, valcounts)
         N = data.values().sum().item()
         scorer = Scorer(valcounts, N, args.score)
-        return get_local_scores(valcounts, data, scorer, musts, bans)
+        return get_local_scores(data, scorer, musts, bans)
 
 def get_local_scores(data:torch.tensor, scorer:Scorer, 
                      musts={}, bans={}) -> LocalScores:
