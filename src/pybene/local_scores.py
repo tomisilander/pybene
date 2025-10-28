@@ -3,12 +3,11 @@
 from argparse import ArgumentParser
 from collections import defaultdict
 
-import numpy as np
 import torch
 
 from .vd import fn2valcs
 from .scorer import Scorer
-from .benetypes import *
+from .benetypes import LocalScores
 from .local_scores_gen import read_data, data2local_scores
 from .local_scores_io import  read_local_scores, write_local_scores
 from .constraints import file2musts_n_bans
@@ -28,9 +27,9 @@ def args2local_scores(args) -> LocalScores:
         scorer = Scorer(valcounts, N, args.score)
         return get_local_scores(data, scorer, musts, bans)
 
-def get_local_scores(data:torch.tensor, scorer:Scorer, 
+def get_local_scores(data:torch.Tensor, scorer:Scorer, 
                      musts={}, bans={}) -> LocalScores:
-    return data2local_scores(data, scorer, musts=musts, bans=bans)
+    return data2local_scores(data, scorer, must_ps=musts, banned_bs=bans)
 
 def negate(scores:LocalScores):
     """in place"""

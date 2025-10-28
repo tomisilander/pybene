@@ -3,7 +3,7 @@
 from pathlib import Path
 from array import array
 from typing import Iterator
-from .benetypes import *
+from .benetypes import LocalScores, Varset, Var
 
 def int2set(x:int) -> Varset:
 
@@ -41,7 +41,7 @@ def read_local_scores(dirname, n) -> LocalScores:
 
     return local_scores
 
-def write_local_scores(local_scores:LocalScore, dirname:str):
+def write_local_scores(local_scores:LocalScores, dirname:str):
     resdir = Path(dirname)
     resdir.mkdir(exist_ok=True, parents=True)
     n = len(local_scores)
