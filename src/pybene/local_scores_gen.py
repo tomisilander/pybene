@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch import Tensor
 from torch.sparse import sum as marginalize
+from torch.nn.functional import one_hot
 
 from .scorer import Scorer
 
@@ -61,9 +62,9 @@ def gen_sets_down(varset: int, first_out_ix):
         return
 
     for x in range(first_out_ix):
-        yield (var_count, x)
         xset = 1 << x  # bitset for x
         next_set = varset ^ xset  # remove x
+        yield (varset, var_count, x, next_set)
         yield from gen_sets_down(next_set, x)
 
 
@@ -72,6 +73,8 @@ def gen_contabs(start_contab: Tensor) -> Generator:
     tuples, where vars is a tuple of variable indices remaining in contab.
     The marginalization order is from all variables down to none so that all needed
     marginals are computed only once.
+    NB! while gen_sets_down yields bitsets, here we keep track of variable indices
+    in the contab tensors.
     """
 
     n = start_contab.sparse_dim()
@@ -79,7 +82,7 @@ def gen_contabs(start_contab: Tensor) -> Generator:
     contabs[n] = (tuple(range(n)), start_contab)
     yield contabs[n]
     start_bitset = (1 << n) - 1
-    for var_count, x in gen_sets_down(start_bitset, n):
+    for (varset, var_count, x, next_set) in gen_sets_down(start_bitset, n):
         ct_varcount = contabs[var_count]
         assert isinstance(ct_varcount, Iterable)
         old_vars, old_contab = ct_varcount
@@ -91,23 +94,23 @@ def gen_contabs(start_contab: Tensor) -> Generator:
 
 
 def contab2condtab(contab: Tensor, i: int, valcount: int):
-    import numpy as np
-
     # indices shape (nvars, nnz) -> (nnz, nvars)
-    cfgs = contab.indices().numpy().transpose().astype(np.int64)
-    freqs = contab.values().numpy().astype(np.int64)
+    cfgs = contab.indices().t()
+    freqs = contab.values()
+    
     # mask out variable i to get parent configurations
-    pcfgs = cfgs.copy()
+    pcfgs = cfgs.clone()
     pcfgs[:, i] = -1
 
     # find unique parent rows and inverse mapping
-    uniq_pcfgs, inv = np.unique(pcfgs, axis=0, return_inverse=True)
+    uniq_pcfgs, inv = torch.unique(pcfgs, dim=0, return_inverse=True)
+    
     # allocate condtable: rows = number of unique parent configs
-    condtab = np.zeros((uniq_pcfgs.shape[0], valcount), dtype=np.int64)
-
+    condtab = torch.zeros((uniq_pcfgs.size(0), valcount), dtype=torch.int64)
+    
     # accumulate frequencies per (parent-row, i_value)
     # inv[j] is parent-row index for cfgs[j]; i_val = cfgs[j, i]
-    np.add.at(condtab, (inv, cfgs[:, i]), freqs)
+    condtab.index_add_(0, inv, one_hot(cfgs[:, i], valcount) * freqs.unsqueeze(1))
 
     return condtab
 

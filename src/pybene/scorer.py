@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from scipy.special import entr as _nlogn
+from torch.special import entr as nlogn
 
 class Scorer():
 
@@ -29,9 +29,7 @@ class Scorer():
 
     def log_ml(self, child_freqs):
         parent_freqs = child_freqs.sum(axis=1)
-        res = -np.sum(_nlogn(child_freqs))   
-        res += np.sum(_nlogn(parent_freqs))
-        return res
+        return nlogn(parent_freqs).sum() - nlogn(child_freqs).sum()
 
     def XIC(self, X, child, parents, freqs):
         nof_pcfgs = self.valcounts[list(parents)].prod(initial=1.0)
@@ -48,4 +46,4 @@ class Scorer():
         return self.XIC('H', child, parents, freqs, **self.kwargs)
 
     def score(self, child, parents, freqs):
-        return self.score_fn(child, parents, freqs)
+        return self.score_fn(child, parents, freqs).item()
