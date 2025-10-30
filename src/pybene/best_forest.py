@@ -3,7 +3,7 @@
 import networkx as nx
 
 from local_scores import args2local_scores
-from benetypes import *
+from src.pybene.benetypes import LocalScores, Varset, Score
 
 def gen_weighted_arcs(ls:LocalScores, S:Varset):
     emptyset = frozenset()
@@ -12,7 +12,8 @@ def gen_weighted_arcs(ls:LocalScores, S:Varset):
         lsx = ls[x]
         score0 = lsx[emptyset]
         for p in S:
-            if p == x: continue
+            if p == x: 
+                continue
             pscore = lsx[singletons[p]]
             if True or pscore > score0 :
                 yield (p, x, {'weight' : pscore})

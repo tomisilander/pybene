@@ -7,10 +7,9 @@ import pickle
 
 import networkx as nx
 
-from .benetypes import *
-from .beneDP import BeneDP
-from .vd import fn2valcs
-from .local_scores import add_score_args, args2local_scores, negate
+from src.pybene.benetypes import Varset, Var, Net
+from src.pybene.beneDP import BeneDP
+from src.pybene.local_scores import add_score_args, args2local_scores, negate
 
 def best_net_in_S(S : Varset, bDP : BeneDP) -> Net:
 
@@ -28,7 +27,8 @@ def best_net_in_S(S : Varset, bDP : BeneDP) -> Net:
 
             return max(gen_sink_scores())[1]
 
-        if len(S)==0 : return
+        if len(S)==0 : 
+            return
         s = best_sink_in_S(S)
         yield from gen_best_order_in_S(S-{s})
         yield s
@@ -77,4 +77,8 @@ if __name__ == '__main__':
     if args.outfile:
         save_net(best_net, args.outfile)
     if args.dotfile:
-        nx.nx_agraph.write_dot(best_net, args.dotfile)
+        g = nx.DiGraph()
+        for child, parents in best_net.items():
+            for p in parents:
+                g.add_edge(p, child)
+        nx.nx_agraph.write_dot(g, args.dotfile)

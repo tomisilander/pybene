@@ -3,7 +3,7 @@
 from pathlib import Path
 from array import array
 from typing import Iterator
-from .benetypes import LocalScores, Varset, Var
+from src.pybene.benetypes import LocalScores, Varset, Var
 
 def int2set(x:int) -> Varset:
 

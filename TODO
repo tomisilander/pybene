@@ -8,6 +8,8 @@
 
 - implement Bayesian scores and NML scores
 - implement model-averaging
+
+typecheck best_subnet.py 
  
 - create image
 

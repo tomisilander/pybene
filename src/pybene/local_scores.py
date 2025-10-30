@@ -5,12 +5,12 @@ from collections import defaultdict
 
 import torch
 
-from .vd import fn2valcs
-from .scorer import Scorer
-from .benetypes import LocalScores
-from .local_scores_gen import read_data, data2local_scores
-from .local_scores_io import  read_local_scores, write_local_scores
-from .constraints import file2musts_n_bans
+from src.pybene.vd import fn2valcs
+from src.pybene.scorer import Scorer
+from src.pybene.benetypes import LocalScores
+from src.pybene.local_scores_gen import read_data, data2local_scores
+from src.pybene.local_scores_io import  read_local_scores, write_local_scores
+from src.pybene.constraints import file2musts_n_bans
 
 def args2local_scores(args) -> LocalScores:
     valcounts = fn2valcs(args.vd_file)

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from itertools import combinations
-from .benetypes import *
+from typing import Dict, Tuple, Generator
+from src.pybene.benetypes import LocalScores, Set2Set, Score, Varset
 
 class BeneDP():
 
@@ -16,9 +17,9 @@ class BeneDP():
 
     def get_best_parents_in_PS(self, x) -> Set2Set :
 
-        def get_best_parents_in_S_x_() -> Set2Set :
+        def get_best_parents_in_S_x_() -> Varset:
 
-            def gen_scored_parents():
+            def gen_scored_parents() -> Generator[Tuple[Score, Varset], None, None]: 
                 for y in S_x_:
                     S__y  = S_x_ - {y}
                     parents = best_parents_in[S__y]

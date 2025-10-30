@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-from typing import Iterator
+from typing import Iterator, List
 from argparse import ArgumentParser
 import pathlib
 import pickle
 
 import numpy as np
 
-from .benetypes import *
-from .beneDP import BeneDP
-from .vd import fn2valcs
-from .local_scores import add_score_args, negate, Scorer, get_local_scores, file2musts_n_bans
-from .local_scores_gen import data_mx_to_coo
-from .best_net import best_net_in_S
+from src.pybene.benetypes import Varset, Var, Net, LocalScores
+from src.pybene.beneDP import BeneDP
+from src.pybene.vd import fn2valcs
+from src.pybene.local_scores import add_score_args, negate, Scorer, get_local_scores, file2musts_n_bans
+from src.pybene.local_scores_gen import data_mx_to_coo
+from src.pybene.best_net import best_net_in_S
 
 def reindex_set(s, rixer):
     return set(map(rixer.get, s))
@@ -32,9 +32,9 @@ def project_by_vars(valcounts, data, musts, bans, vars):
     bans = dict(reindex_dict_of_sets(bans, var2ix, vars))
     return valcounts, data, musts, bans
     
-def args2local_scores(args, vars:Iterator[int]) -> LocalScores:
+def args2local_scores(args, varsiter:Iterator[int]) -> LocalScores:
 
-    vars = sorted(vars)
+    vars:List = sorted(varsiter)
     valcounts = fn2valcs(args.vd_file)
     valcounts = [valcounts[v] for v in vars]
 
